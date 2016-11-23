@@ -10,7 +10,6 @@ class TwitchPubSub extends EventEmitter {
         super();
         if (options.defaultTopics.length < 1)throw new Error('missing default topic');
         this._token = options.authToken;
-	console.log(this._token);
         this._autoreconnect = options.reconnect || true;
 
         this._pending = {};
@@ -19,7 +18,6 @@ class TwitchPubSub extends EventEmitter {
         this._pingInterval = null;
         this._pingTimeout = null;
         this._topics = options.defaultTopics;
-	console.log(this._topics);
         this._connect();
     }
 
@@ -32,7 +30,7 @@ class TwitchPubSub extends EventEmitter {
             this._ws.send(JSON.stringify({
                 type: 'LISTEN',
                 nonce: this._initial,
-                data: {topics: this._topics, auth_token: (this._token)}
+                data: {topics: this._topics, auth_token: (this._token ? this._token : undefined)}
             }));
             this.emit('connect');
         });
@@ -54,7 +52,6 @@ class TwitchPubSub extends EventEmitter {
         this._ws.on('message', (msg) => {
             try {
                 msg = JSON.parse(msg);
-		console.log(msg);
                 this.emit('raw', msg);
                 if (msg.type === 'RESPONSE') {
                     if (msg.nonce === this._initial) {
