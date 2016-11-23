@@ -10,6 +10,7 @@ class TwitchPubSub extends EventEmitter {
         super();
         if (options.defaultTopics.length < 1)throw new Error('missing default topic');
         this._token = options.authToken;
+	console.log(this._token);
         this._autoreconnect = options.reconnect || true;
 
         this._pending = {};
@@ -18,7 +19,7 @@ class TwitchPubSub extends EventEmitter {
         this._pingInterval = null;
         this._pingTimeout = null;
         this._topics = options.defaultTopics;
-
+	console.log(this._topics);
         this._connect();
     }
 
@@ -31,7 +32,7 @@ class TwitchPubSub extends EventEmitter {
             this._ws.send(JSON.stringify({
                 type: 'LISTEN',
                 nonce: this._initial,
-                data: {topics: this._topics, auth_token: (this._token ? this._token : undefined)}
+                data: {topics: this._topics, auth_token: (this._token)}
             }));
             this.emit('connect');
         });
@@ -53,6 +54,7 @@ class TwitchPubSub extends EventEmitter {
         this._ws.on('message', (msg) => {
             try {
                 msg = JSON.parse(msg);
+		console.log(msg);
                 this.emit('raw', msg);
                 if (msg.type === 'RESPONSE') {
                     if (msg.nonce === this._initial) {
@@ -91,7 +93,17 @@ class TwitchPubSub extends EventEmitter {
                         }
                     } else if (topic.includes('whispers')) {
                         //todo
-                    }
+                    } else if (topic === 'channel-bitsevents') {
+                        this.emit('bits', {
+			    user_name: msg.data.message.user_name,
+			    channel_name: msg.data.message.channel_name,
+			    time: msg.data.message.time,
+			    chat_message: msg.data.message.chat_message,
+			    bits_used: msg.data.message.bits_used,
+			    total_bits_used: msg.data.message.bits_used,
+			    context: msg.data.message.context
+			});
+		    }
                 } else if (msg.type === 'PONG') {
                     clearTimeout(this._pingTimeout);
                     this._pingTimeout = null;
@@ -194,7 +206,8 @@ class TwitchPubSub extends EventEmitter {
     static get TOPICS() {
         return {
             WHISPERS: 'whispers',
-            VIDEOPLAYBACK: 'video-playback'
+            VIDEOPLAYBACK: 'video-playback',
+	    BITS: 'channel-bitsevents'
         };
     }
 
